@@ -4,6 +4,7 @@ import Image from "next/image";
 import dynamic from "next/dynamic";
 import { useAccount, useDisconnect } from "wagmi";
 import { useWeb3Modal } from "@web3modal/wagmi/react";
+import GlobalSearchBar from "./components/search/GlobalSearchBar";
 
 // Dynamically import the CoW widget to prevent SSR issues
 const CowSwapWidgetWrapper = dynamic(
@@ -12,6 +13,7 @@ const CowSwapWidgetWrapper = dynamic(
     ssr: false
   }
 );
+
 
 // Custom wallet component with address and disconnect button
 function WalletButton() {
@@ -100,15 +102,15 @@ export default function Home() {
       {/* Header */}
       <header className="fixed md:sticky top-0 left-0 right-0 z-50 border-b border-gray-800 bg-black/80 backdrop-blur-sm" role="banner">
         <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4 md:gap-6 flex-1 min-w-0">
               {/* Mobile Logo */}
               <Image 
                 src="/mobilelogo.png" 
                 alt="Vaulto Swap" 
                 width={32} 
                 height={32}
-                className="object-contain w-8 h-8 md:hidden"
+                className="object-contain w-8 h-8 md:hidden flex-shrink-0"
                 priority
               />
               {/* Desktop Logo */}
@@ -117,7 +119,7 @@ export default function Home() {
                 alt="Vaulto Swap" 
                 width={120} 
                 height={40}
-                className="object-contain w-24 h-auto hidden md:block"
+                className="object-contain w-24 h-auto hidden md:block flex-shrink-0"
                 priority
               />
               <nav aria-label="Main navigation" className="hidden md:block">
@@ -192,8 +194,24 @@ export default function Home() {
               </nav>
             </div>
             
+            {/* Global Search Bar - Desktop (Centered) */}
+            <div className="hidden md:flex flex-1 justify-center items-center">
+              <div className="w-full max-w-md">
+                <GlobalSearchBar />
+              </div>
+            </div>
+            
             {/* Connect Wallet Button */}
-            <WalletButton />
+            <div className="flex-shrink-0">
+              <WalletButton />
+            </div>
+          </div>
+          
+          {/* Global Search Bar - Mobile (below main header, centered) */}
+          <div className="md:hidden mt-3 flex justify-center">
+            <div className="w-full max-w-md">
+              <GlobalSearchBar />
+            </div>
           </div>
         </div>
       </header>
@@ -212,7 +230,7 @@ export default function Home() {
             </p>
           </div>
           
-          <div className="w-full max-w-6xl mx-auto">
+          <div id="swap-widget" className="w-full max-w-6xl mx-auto">
             <CowSwapWidgetWrapper />
           </div>
         </section>
