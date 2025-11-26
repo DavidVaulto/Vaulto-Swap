@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { Providers } from "./providers";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -52,7 +54,7 @@ export const metadata: Metadata = {
     siteName: "Vaulto",
     images: [
       {
-        url: "/socialad.png",
+        url: "/promotional.png",
         width: 1200,
         height: 630,
         alt: "Vaulto Swap - Trade Tokenized Stocks with Stablecoins",
@@ -65,7 +67,7 @@ export const metadata: Metadata = {
     description: "Trade tokenized equities with stablecoins. Advanced DeFi infrastructure with MEV protection and institutional-grade security.",
     creator: "@vaultoai",
     site: "@vaultoai",
-    images: ["/socialad.png"],
+    images: ["/promotional.png"],
   },
   robots: {
     index: true,
@@ -121,13 +123,29 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+        <meta name="theme-color" content="#000000" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
       </head>
       <body className={inter.className}>
-        <Providers>{children}</Providers>
+        {/* Google tag (gtag.js) */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-Y8W2H3EQJD"
+          strategy="lazyOnload"
+        />
+        <Script id="google-analytics" strategy="lazyOnload">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-Y8W2H3EQJD');
+          `}
+        </Script>
+        <ErrorBoundary>
+          <Providers>{children}</Providers>
+        </ErrorBoundary>
       </body>
     </html>
   );

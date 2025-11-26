@@ -1,13 +1,65 @@
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   compress: true,
   poweredByHeader: false,
   swcMinify: true,
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'coin-images.coingecko.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'assets.coingecko.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'raw.githubusercontent.com',
+        pathname: '/Uniswap/assets/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'raw.githubusercontent.com',
+        pathname: '/trustwallet/assets/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'token-icons.s3.amazonaws.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'ipfs.io',
+      },
+      {
+        protocol: 'https',
+        hostname: 'gateway.pinata.cloud',
+      },
+      {
+        protocol: 'https',
+        hostname: 'cloudflare-ipfs.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'vaulto.dev',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.vaulto.dev',
+      },
+    ],
+  },
   experimental: {
     optimizePackageImports: ['@cowprotocol/widget-react', 'wagmi', '@web3modal/wagmi'],
   },
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, webpack }) => {
     config.resolve.fallback = { 
       ...config.resolve.fallback,
       fs: false, 
@@ -16,13 +68,22 @@ const nextConfig = {
       '@react-native-async-storage/async-storage': false
     };
     
-    // Push externals to prevent bundling of unnecessary packages
-    config.externals.push('pino-pretty', 'encoding', '@react-native-async-storage/async-storage');
+    // Replace React Native async-storage with an empty stub to prevent build errors
+    config.plugins.push(
+      new webpack.NormalModuleReplacementPlugin(
+        /^@react-native-async-storage\/async-storage$/,
+        path.resolve(__dirname, 'webpack-stubs/async-storage-stub.js')
+      )
+    );
     
     // Ignore React Native modules during build
-    config.ignoreWarnings = [
-      { module: /@react-native-async-storage\/async-storage/ }
-    ];
+    if (!config.ignoreWarnings) {
+      config.ignoreWarnings = [];
+    }
+    config.ignoreWarnings.push(
+      { module: /@react-native-async-storage\/async-storage/ },
+      { message: /Cannot find module '@react-native-async-storage\/async-storage'/ }
+    );
     
     // Optimize bundle splitting - simplified to avoid module resolution issues
     if (!isServer && config.optimization && config.optimization.splitChunks && config.optimization.splitChunks !== false) {

@@ -1,14 +1,14 @@
 import { MetadataRoute } from 'next';
 
-export default function manifest(): MetadataRoute.Manifest {
-  return {
+export async function GET() {
+  const manifest: MetadataRoute.Manifest = {
     name: 'Vaulto',
     short_name: 'Vaulto',
     description: 'Trade tokenized equities with stablecoins. Advanced DeFi infrastructure with MEV protection and institutional-grade security.',
     start_url: '/',
     display: 'standalone',
     background_color: '#000000',
-    theme_color: '#facc15',
+    theme_color: '#000000',
     icons: [
       {
         src: '/favicon.png',
@@ -38,5 +38,7 @@ export default function manifest(): MetadataRoute.Manifest {
     categories: ['finance', 'business'],
     orientation: 'portrait',
   };
+
+  return Response.json(manifest);
 }
 

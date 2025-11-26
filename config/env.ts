@@ -9,8 +9,7 @@ const envSchema = z.object({
   NEXT_PUBLIC_POLYGON_RPC_URL: z.string().url().optional(),
   NEXT_PUBLIC_SEPOLIA_RPC_URL: z.string().url().optional(),
   NEXT_PUBLIC_ARBITRUM_SEPOLIA_RPC_URL: z.string().url().optional(),
-  // The Graph API key for Uniswap v3 subgraph queries (server-side only)
-  THE_GRAPH_API_KEY: z.string().min(1, "THE_GRAPH_API_KEY is required for Uniswap v3 subgraph queries").optional(),
+  THE_GRAPH_API_KEY: z.string().min(1, "THE_GRAPH_API_KEY is required for Uniswap subgraph queries. Get your API key from: https://thegraph.com/studio/apikeys/").optional(),
 });
 
 export function validateEnv() {

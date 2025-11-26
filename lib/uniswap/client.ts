@@ -1,11 +1,16 @@
 /**
- * Generic GraphQL client for Uniswap v3 subgraphs
+ * GraphQL Client for Uniswap v3 Subgraphs
+ * 
+ * Provides a generic function to query Uniswap v3 subgraphs via The Graph Network.
  */
 
-import { VaultoChainId, getUniswapV3SubgraphEndpoint } from "./subgraphs";
+import { getUniswapV3SubgraphEndpoint } from './subgraphs';
 
-export interface GraphQLResponse<T> {
-  data: T;
+/**
+ * GraphQL response structure from The Graph Network
+ */
+interface GraphQLResponse<T = any> {
+  data?: T;
   errors?: Array<{
     message: string;
     locations?: Array<{ line: number; column: number }>;
@@ -14,62 +19,64 @@ export interface GraphQLResponse<T> {
 }
 
 /**
- * Query Uniswap v3 subgraph with GraphQL
+ * Query a Uniswap v3 subgraph with a GraphQL query and variables.
  * 
  * @param chainId - The chain ID to query
- * @param query - GraphQL query string
- * @param variables - Optional query variables
- * @returns The response data
- * @throws Error if the request fails or contains GraphQL errors
+ * @param query - The GraphQL query string
+ * @param variables - Optional variables for the query
+ * @returns The data from the GraphQL response
+ * @throws Error if the query fails or returns errors
  */
-export async function queryUniswapV3Subgraph<T>(
-  chainId: VaultoChainId,
+export async function queryUniswapV3Subgraph<T = any>(
+  chainId: number,
   query: string,
   variables?: Record<string, any>
 ): Promise<T> {
   const endpoint = getUniswapV3SubgraphEndpoint(chainId);
 
   try {
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query, variables }),
-      // Add timeout for server-side requests
-      signal: AbortSignal.timeout(10000), // 10 second timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        query,
+        variables: variables || {},
+      }),
+      signal: controller.signal,
     });
 
-    if (!res.ok) {
-      const errorText = await res.text().catch(() => res.statusText);
-      throw new Error(
-        `Uniswap subgraph HTTP error: ${res.status} ${res.statusText}. ${errorText}`
-      );
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const json: GraphQLResponse<T> = await res.json();
+    const result: GraphQLResponse<T> = await response.json();
 
-    if (json.errors && json.errors.length > 0) {
-      const errorMessages = json.errors.map((e) => e.message).join(", ");
-      throw new Error(
-        `Uniswap subgraph GraphQL error: ${errorMessages}. ` +
-        `Query: ${query.substring(0, 100)}...`
-      );
+    // Check for GraphQL errors
+    if (result.errors && result.errors.length > 0) {
+      const errorMessages = result.errors.map((e) => e.message).join(', ');
+      throw new Error(`GraphQL errors: ${errorMessages}`);
     }
 
-    if (!json.data) {
-      throw new Error("Uniswap subgraph returned no data");
+    if (!result.data) {
+      throw new Error('GraphQL response contains no data');
     }
 
-    return json.data;
+    return result.data;
   } catch (error) {
     if (error instanceof Error) {
-      // Re-throw with more context
-      throw new Error(
-        `Failed to query Uniswap v3 subgraph for chain ${chainId}: ${error.message}`
-      );
+      if (error.name === 'AbortError') {
+        throw new Error(`Request timeout after 10 seconds for chain ${chainId}`);
+      }
+      throw new Error(`Failed to query subgraph for chain ${chainId}: ${error.message}`);
     }
-    throw error;
+    throw new Error(`Failed to query subgraph for chain ${chainId}: Unknown error`);
   }
 }
-
-
 

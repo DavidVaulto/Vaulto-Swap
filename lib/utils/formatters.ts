@@ -63,3 +63,28 @@ export function formatTokenAmount(amount: string | number, symbol: string, decim
   return `${formatNumber(amount, decimals)} ${symbol}`;
 }
 
+/**
+ * Format TVL (Total Value Locked) with $ prefix and compact notation
+ * Example: formatTVL(1500000) returns "$1.50M"
+ */
+export function formatTVL(value: number): string {
+  if (isNaN(value) || value < 0) {
+    return "$0.00";
+  }
+  return `$${formatCompactNumber(value)}`;
+}
+
+/**
+ * Format fee tier from basis points to percentage
+ * Example: formatFeeTier(500) returns "0.05%"
+ * Example: formatFeeTier(10000) returns "1.00%"
+ */
+export function formatFeeTier(feeTierBps: number): string {
+  if (isNaN(feeTierBps) || feeTierBps < 0) {
+    return "0.00%";
+  }
+  // Convert basis points to percentage (divide by 10000)
+  const percentage = feeTierBps / 10000;
+  return `${percentage.toFixed(2)}%`;
+}
+

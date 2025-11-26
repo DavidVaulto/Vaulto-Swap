@@ -14,8 +14,10 @@
   },
   "dependencies": {
     "@cowprotocol/widget-react": "^0.14.0",
+    "@rainbow-me/rainbowkit": "^2.2.9",
     "@tanstack/react-query": "^5.28.0",
     "@web3modal/wagmi": "^4.1.0",
+    "ethers": "^6.13.0",
     "framer-motion": "^11.0.0",
     "lightweight-charts": "^5.0.9",
     "next": "^14.2.0",

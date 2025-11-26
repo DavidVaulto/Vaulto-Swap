@@ -1,22 +1,44 @@
 /**
- * Token search via Uniswap v3 subgraph
+ * Token Search Module
+ * 
+ * Searches for tokens in Uniswap v3 subgraphs by symbol or name.
  */
 
-import { VaultoChainId } from "./subgraphs";
-import { queryUniswapV3Subgraph } from "./client";
+import { queryUniswapV3Subgraph } from './client';
+import { isChainSupported, type VaultoChainId } from './subgraphs';
 
-export interface UniswapToken {
-  address: string;
+/**
+ * GraphQL token search result from subgraph
+ */
+interface GraphQLToken {
+  id: string; // Token address (lowercase)
   symbol: string;
   name: string;
   decimals: number;
-  tvlUSD: number;
-  volumeUSD: number;
+  volumeUSD: string;
+  totalValueLockedUSD: string;
 }
 
+/**
+ * GraphQL response structure for token search
+ */
+interface TokenSearchResponse {
+  tokens: GraphQLToken[];
+}
+
+/**
+ * Transformed token result
+ */
 export interface TokenSearchResult {
   chainId: VaultoChainId;
-  tokens: UniswapToken[];
+  tokens: Array<{
+    address: string; // Lowercased
+    symbol: string;
+    name: string;
+    decimals: number;
+    tvlUSD: number;
+    volumeUSD: number;
+  }>;
 }
 
 /**
@@ -46,46 +68,64 @@ const TOKEN_SEARCH_QUERY = `
 `;
 
 /**
- * Search for tokens matching the given text query
+ * Search for tokens by symbol or name in a Uniswap v3 subgraph.
  * 
  * @param chainId - The chain ID to search on
- * @param text - Search query (token symbol or name)
- * @param limit - Maximum number of results (default: 20)
- * @returns Search results with matching tokens
+ * @param text - The search text (symbol or name)
+ * @param limit - Maximum number of results (default: 10)
+ * @returns Array of matching tokens sorted by TVL descending, or empty array on error
  */
 export async function searchTokens(
-  chainId: VaultoChainId,
+  chainId: number,
   text: string,
-  limit = 20
+  limit: number = 10
 ): Promise<TokenSearchResult> {
-  if (!text.trim()) {
-    return { chainId, tokens: [] };
+  // Return empty result if chain is not supported
+  if (!isChainSupported(chainId)) {
+    console.debug(`Chain ${chainId} is not supported for token search`);
+    return {
+      chainId: chainId as VaultoChainId,
+      tokens: [],
+    };
+  }
+
+  if (!text || typeof text !== 'string' || text.trim().length === 0) {
+    return {
+      chainId: chainId as VaultoChainId,
+      tokens: [],
+    };
   }
 
   try {
-    const data = await queryUniswapV3Subgraph<{ tokens: any[] }>(
+    const response = await queryUniswapV3Subgraph<TokenSearchResponse>(
       chainId,
       TOKEN_SEARCH_QUERY,
-      { text: text.trim(), first: Math.min(limit, 100) } // Cap at 100 for safety
+      {
+        text: text.trim(),
+        first: Math.min(limit, 100), // Cap at 100 for safety
+      }
     );
 
-    const tokens: UniswapToken[] = (data.tokens || []).map((t) => ({
-      address: (t.id || "").toLowerCase(),
-      symbol: t.symbol || "",
-      name: t.name || "",
-      decimals: Number(t.decimals || 18),
-      tvlUSD: Number(t.totalValueLockedUSD || 0),
-      volumeUSD: Number(t.volumeUSD || 0),
+    const tokens = (response.tokens || []).map((token) => ({
+      address: token.id.toLowerCase(), // Ensure lowercase
+      symbol: token.symbol || '',
+      name: token.name || '',
+      decimals: token.decimals || 18,
+      tvlUSD: parseFloat(token.totalValueLockedUSD || '0'),
+      volumeUSD: parseFloat(token.volumeUSD || '0'),
     }));
 
-    return { chainId, tokens };
+    return {
+      chainId: chainId as VaultoChainId,
+      tokens,
+    };
   } catch (error) {
-    // Log error but return empty results rather than throwing
-    // This allows the UI to gracefully handle subgraph failures
-    console.error(`Token search failed for chain ${chainId}:`, error);
-    return { chainId, tokens: [] };
+    // Log error but don't throw - return empty array for graceful degradation
+    console.error(`Error searching tokens on chain ${chainId}:`, error);
+    return {
+      chainId: chainId as VaultoChainId,
+      tokens: [],
+    };
   }
 }
-
-
 
